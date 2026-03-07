@@ -206,12 +206,24 @@
 
       .table-footer {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         margin-top: 12px;
+        gap: 12px;
+        flex-wrap: wrap;
       }
 
       .table-footer button {
         width: auto;
+      }
+
+      .portfolio-total {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .portfolio-total strong {
+        color: var(--text);
       }
 
       table {
@@ -441,6 +453,7 @@
           <tbody></tbody>
         </table>
         <div class="table-footer">
+          <div id="portfolioTotal" class="portfolio-total">계좌 합계: <strong>0원</strong></div>
           <button id="addRow">ETF 상품 추가</button>
         </div>
       </section>
@@ -487,6 +500,7 @@
       const accountNameEl = document.getElementById("accountName");
       const budgetEl = document.getElementById("budget");
       const baseDateEl = document.getElementById("baseDate");
+      const portfolioTotalEl = document.getElementById("portfolioTotal");
       let latestRebalanceResult = null;
       let lastAppliedSnapshot = null;
       const STORAGE_KEY_V3 = "pension-rebalance-v3";
@@ -654,11 +668,17 @@
 
       function refreshEvalValues() {
         const rows = [...tableBody.querySelectorAll("tr")];
+        let total = 0;
         for (const row of rows) {
           const inputs = row.querySelectorAll("input");
           const price = parseNumberLike(inputs[3].value || 0);
           const qty = Number(inputs[4].value || 0);
-          row.querySelector(".value-cell").textContent = formatKRW(price * qty);
+          const value = price * qty;
+          row.querySelector(".value-cell").textContent = formatKRW(value);
+          total += value;
+        }
+        if (portfolioTotalEl) {
+          portfolioTotalEl.innerHTML = `계좌 합계: <strong>${formatKRW(total)}</strong>`;
         }
       }
 
