@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pension-rebalance-556879448371.us-west1.run.app/sitemap.xml

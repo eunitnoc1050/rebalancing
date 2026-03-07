@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ETF 계좌 리밸런싱 계산기. 연금저축·IRP·증권계좌의 ETF 포트폴리오 목표 비중에 맞춰 월 투자금 기준 매수 수량을 계산하고, KRX 시세를 불러와 리밸런싱을 도와줍니다."
+    />
+    <meta
+      name="keywords"
+      content="ETF, 리밸런싱, 연금저축, IRP, 포트폴리오, 자산배분, KRX, 투자금 계산기, 매수 수량 계산"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta name="author" content="ETF 계좌 리밸런싱 계산기" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:site_name" content="ETF 계좌 리밸런싱 계산기" />
+    <meta property="og:title" content="ETF 계좌 리밸런싱 계산기" />
+    <meta property="og:url" content="https://pension-rebalance-556879448371.us-west1.run.app/" />
+    <meta
+      property="og:description"
+      content="KRX 시세 기반으로 ETF 계좌 리밸런싱 매수 수량을 계산하는 웹 계산기"
+    />
+    <meta property="og:image" content="/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ETF 계좌 리밸런싱 계산기" />
+    <meta
+      name="twitter:description"
+      content="ETF 포트폴리오 목표 비중에 맞춰 월 투자금 기준 매수 수량을 계산하세요."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="canonical" href="https://pension-rebalance-556879448371.us-west1.run.app/" />
+    <link rel="alternate" hreflang="ko-KR" href="/" />
+    <title>ETF 계좌 리밸런싱 계산기</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #13233a;
+        --muted: #5b6a80;
+        --line: #dbe4ef;
+        --accent: #1463ff;
+        --accent-soft: #eaf1ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 0 0, #dbe9ff 0, var(--bg) 45%);
+        color: var(--text);
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 32px auto;
+        padding: 0 16px 40px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 30px;
+      }
+
+      .desc {
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 8px 20px rgba(20, 30, 60, 0.05);
+        margin-bottom: 14px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 12px;
+      }
+
+      .account-row {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 12px;
+      }
+
+      .section-title {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .section-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1.2fr 0.9fr;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+
+      label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 15px;
+        padding: 10px 12px;
+      }
+
+      input:focus,
+      button:focus {
+        outline: 2px solid var(--accent-soft);
+        border-color: var(--accent);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .actions.compact button {
+        width: auto;
+      }
+
+      .storage-groups {
+        display: grid;
+        gap: 10px;
+      }
+
+      .storage-group {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: #fbfdff;
+      }
+
+      .storage-group .actions {
+        margin-top: 0;
+      }
+
+      .text-link-btn {
+        width: auto;
+        border: 0;
+        background: transparent;
+        color: #3d5e9e;
+        font-size: 12px;
+        padding: 2px 0;
+        text-decoration: underline;
+      }
+
+      .text-link-btn:hover:not(:disabled) {
+        background: transparent;
+        border: 0;
+        color: #224b98;
+      }
+
+      button {
+        cursor: pointer;
+        background: white;
+        transition: transform 0.06s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+      }
+
+      button:hover:not(:disabled) {
+        background: #f3f7ff;
+        border-color: #b9cdf8;
+      }
+
+      button:active {
+        transform: translateY(1px) scale(0.99);
+      }
+
+      button.primary {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      button.primary:hover:not(:disabled) {
+        background: #0f55de;
+        border-color: #0f55de;
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+
+      .table-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+      }
+
+      .table-footer button {
+        width: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+
+      #assetTable {
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        font-size: 13px;
+        color: var(--muted);
+        background: #fbfdff;
+      }
+
+      td input {
+        min-width: 90px;
+      }
+
+      #assetTable td input {
+        width: 100%;
+      }
+
+      #assetTable td.num input {
+        text-align: right;
+      }
+
+      #assetTable th.action,
+      #assetTable td.action {
+        text-align: center;
+      }
+
+      .num {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .result {
+        margin-top: 10px;
+      }
+
+      .result table {
+        min-width: 760px;
+      }
+
+      #applyPlan {
+        width: auto;
+      }
+
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        border-radius: 999px;
+        background: #edf3ff;
+        color: #0f4ec7;
+        padding: 3px 8px;
+      }
+
+      .error {
+        color: #b40f2d;
+      }
+
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      .footer {
+        margin-top: 18px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .footer a {
+        color: #2f57a8;
+      }
+
+      .status-message {
+        margin: 0;
+        font-size: 14px;
+        color: #1f3f79;
+        background: #eef4ff;
+        border: 1px solid #c7d8fb;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+
+      .status-message.error {
+        color: #8e1028;
+        background: #ffeef1;
+        border-color: #f1b8c4;
+      }
+
+      @media (max-width: 980px) {
+        .section-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .section-grid,
+        .account-row,
+        .row {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>ETF 계좌 리밸런싱 계산기</h1>
+      <p class="desc">
+        현재 보유수량 + 목표 비중 + 월 투자금으로 ETF별 매수 수량을 계산합니다.
+      </p>
+
+      <div class="section-grid">
+        <section class="card">
+          <h2 class="section-title">계좌 관리</h2>
+          <div class="account-row">
+            <div>
+              <label for="accountSelect">계좌 선택</label>
+              <select id="accountSelect"></select>
+            </div>
+            <div>
+              <label for="accountName">계좌 이름</label>
+              <input id="accountName" type="text" placeholder="예: 연금저축, IRP" />
+            </div>
+          </div>
+          <div class="actions compact">
+            <button id="renameAccount">이름 변경</button>
+            <button id="addAccount">계좌 추가</button>
+            <button id="deleteAccount">계좌 삭제</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">월별 투자 리밸런싱</h2>
+          <div class="row">
+            <div>
+              <label for="budget">이번 달 투자금 (KRW)</label>
+              <input id="budget" type="text" inputmode="numeric" value="1,000,000" />
+            </div>
+            <div>
+              <label for="baseDate">기준일 (YYYYMMDD)</label>
+              <input id="baseDate" type="text" inputmode="numeric" placeholder="예: 20260227" />
+            </div>
+          </div>
+          <div class="actions compact">
+            <button id="fetchPrices">현재가 불러오기</button>
+            <button id="calc" class="primary">리밸런싱 계산</button>
+          </div>
+          <div class="hint">KRX Open API ETF 일별매매정보를 사용합니다. 당일 장중가가 아니라 기준일 종가 기준입니다.</div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">데이터 저장 관리</h2>
+          <div class="storage-groups">
+            <div class="storage-group">
+              <div class="actions compact">
+                <button id="save">브라우저 저장</button>
+                <button id="load">불러오기</button>
+              </div>
+            </div>
+            <div class="storage-group">
+              <div class="actions compact">
+                <button id="exportExcel">엑셀 내보내기</button>
+                <button id="importExcel">엑셀 불러오기</button>
+                <input id="importExcelInput" type="file" accept=".xlsx,.xls" style="display:none;" />
+              </div>
+              <button id="downloadTemplate" class="text-link-btn">엑셀 템플릿 다운로드</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card">
+        <p id="statusMessage" class="status-message"></p>
+      </section>
+
+      <section class="card result" id="result">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong>매수 제안</strong>
+        </div>
+        <div class="hint">리밸런싱 계산을 실행하면 매수 제안이 표시됩니다.</div>
+      </section>
+
+      <section class="card table-wrap">
+        <table id="assetTable">
+          <colgroup>
+            <col style="width: 25%" />
+            <col style="width: 16%" />
+            <col style="width: 11%" />
+            <col style="width: 13%" />
+            <col style="width: 11%" />
+            <col style="width: 14%" />
+            <col style="width: 10%" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>종목명</th>
+              <th>종목코드</th>
+              <th class="num">목표 비중(%)</th>
+              <th class="num">현재가</th>
+              <th class="num">보유 수량</th>
+              <th class="num">현재 평가금액</th>
+              <th class="action"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="table-footer">
+          <button id="addRow">ETF 상품 추가</button>
+        </div>
+      </section>
+
+      <footer class="footer">
+        서비스 문의: <a href="mailto:island4j@gmail.com">island4j@gmail.com</a>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ETF 계좌 리밸런싱 계산기",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "ko-KR",
+        "description": "ETF 계좌의 목표 비중을 기준으로 월 투자금 매수 수량을 계산하는 리밸런싱 계산기",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "KRW"
+        }
+      }
+    </script>
+    <script>
+      const DEFAULT_ASSETS = [
+        { name: "KODEX 미국S&P500", code: "379800", targetWeight: 24, price: 0, qty: 36 },
+        { name: "KIWOOM 200TR", code: "294400", targetWeight: 8, price: 0, qty: 3 },
+        { name: "KODEX 차이나CSI300", code: "283580", targetWeight: 8, price: 0, qty: 18 },
+        { name: "KODEX 인도Nifty50", code: "453810", targetWeight: 8, price: 0, qty: 19 },
+        { name: "ACE KRX금현물", code: "411060", targetWeight: 19, price: 0, qty: 22 },
+        { name: "KODEX 미국10년국채선물", code: "308620", targetWeight: 7, price: 0, qty: 19 },
+        { name: "ACE 미국30년국채액티브(H)", code: "453850", targetWeight: 7, price: 0, qty: 31 },
+        { name: "RISE KIS국고채30년Enhanced", code: "385560", targetWeight: 14, price: 0, qty: 6 },
+        { name: "TIGER KOFR금리액티브(합성)", code: "449170", targetWeight: 5, price: 0, qty: 1 }
+      ];
+
+      const tableBody = document.querySelector("#assetTable tbody");
+      const resultEl = document.getElementById("result");
+      const statusMessageEl = document.getElementById("statusMessage");
+      const accountSelectEl = document.getElementById("accountSelect");
+      const accountNameEl = document.getElementById("accountName");
+      const budgetEl = document.getElementById("budget");
+      const baseDateEl = document.getElementById("baseDate");
+      let latestRebalanceResult = null;
+      let lastAppliedSnapshot = null;
+      const STORAGE_KEY_V3 = "pension-rebalance-v3";
+      const STORAGE_KEY_V2 = "pension-rebalance-v2";
+      const STORAGE_KEY_V1 = "pension-rebalance-v1";
+      const yesterdayYmd = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
+      let accountIdSeq = Date.now();
+      let state = null;
+
+      function formatKRW(v) {
+        return Number(v || 0).toLocaleString("ko-KR", { maximumFractionDigits: 0 }) + "원";
+      }
+
+      function formatPct(v) {
+        return Number(v || 0).toFixed(2) + "%";
+      }
+
+      function parseNumberLike(v) {
+        const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function formatInteger(v) {
+        return Math.round(Number(v || 0)).toLocaleString("ko-KR", { maximumFractionDigits: 0 });
+      }
+
+      function formatMoneyInput(el) {
+        if (!el) return;
+        const n = parseNumberLike(el.value);
+        el.value = formatInteger(n);
+      }
+
+      function normalizeCode(code) {
+        return String(code || "")
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
+      }
+
+      function createAccount(name) {
+        accountIdSeq += 1;
+        return {
+          id: String(accountIdSeq),
+          name: name || `계좌 ${accountIdSeq % 1000}`,
+          budget: 1000000,
+          baseDate: yesterdayYmd,
+          assets: DEFAULT_ASSETS.map((a) => ({ ...a }))
+        };
+      }
+
+      function makeDefaultState() {
+        const first = createAccount("기본 계좌");
+        return {
+          activeAccountId: first.id,
+          accounts: [first]
+        };
+      }
+
+      function syncAccountIdSeq() {
+        const maxId = state.accounts.reduce((max, a) => {
+          const n = Number(String(a.id || "").replace(/[^\d]/g, ""));
+          return Number.isFinite(n) ? Math.max(max, n) : max;
+        }, 0);
+        if (maxId > accountIdSeq) accountIdSeq = maxId;
+      }
+
+      function getActiveAccount() {
+        const account = state.accounts.find((a) => a.id === state.activeAccountId);
+        return account || state.accounts[0];
+      }
+
+      function renderAccountSelector() {
+        const active = getActiveAccount();
+        accountSelectEl.innerHTML = state.accounts
+          .map((a) => `<option value="${a.id}" ${a.id === active.id ? "selected" : ""}>${a.name}</option>`)
+          .join("");
+        accountNameEl.value = active.name;
+      }
+
+      function renderActiveAccount() {
+        const active = getActiveAccount();
+        budgetEl.value = formatInteger(active.budget ?? 0);
+        baseDateEl.value = active.baseDate || yesterdayYmd;
+        renderRows(Array.isArray(active.assets) ? active.assets : []);
+        latestRebalanceResult = null;
+        lastAppliedSnapshot = null;
+        resultEl.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong>매수 제안</strong>
+          </div>
+          <div class="hint">리밸런싱 계산을 실행하면 매수 제안이 표시됩니다.</div>
+        `;
+        showInfo("현재가 불러오기 후 리밸런싱 계산을 눌러주세요.");
+      }
+
+      function saveActiveAccountFromForm() {
+        const active = getActiveAccount();
+        if (!active) return;
+        active.name = accountNameEl.value.trim() || active.name;
+        active.budget = parseNumberLike(budgetEl.value || 0);
+        active.baseDate = baseDateEl.value.trim();
+        active.assets = getAssetsFromTable();
+      }
+
+      function normalizeLoadedState(data) {
+        if (data && Array.isArray(data.accounts) && data.accounts.length) {
+          const accounts = data.accounts.map((a, idx) => ({
+            id: String(a.id || `acc-${idx + 1}`),
+            name: String(a.name || `계좌 ${idx + 1}`),
+            budget: parseNumberLike(a.budget ?? 0),
+            baseDate: String(a.baseDate || yesterdayYmd),
+            assets: Array.isArray(a.assets) ? a.assets : DEFAULT_ASSETS.map((x) => ({ ...x }))
+          }));
+          const activeId = accounts.some((a) => a.id === data.activeAccountId) ? data.activeAccountId : accounts[0].id;
+          const next = { activeAccountId: activeId, accounts };
+          return next;
+        }
+
+        if (data && Array.isArray(data.assets)) {
+          const migrated = createAccount("기본 계좌");
+          migrated.budget = parseNumberLike(data.budget ?? 0);
+          migrated.baseDate = String(data.baseDate || yesterdayYmd);
+          migrated.assets = data.assets;
+          return { activeAccountId: migrated.id, accounts: [migrated] };
+        }
+
+        return makeDefaultState();
+      }
+
+      function getAssetsFromTable() {
+        const rows = [...tableBody.querySelectorAll("tr")];
+        return rows.map((row) => {
+          const [name, code, targetWeight, price, qty] = [...row.querySelectorAll("input")].map((el) => el.value.trim());
+          return {
+            name,
+            code,
+            targetWeight: Number(targetWeight),
+            price: parseNumberLike(price),
+            qty: Number(qty)
+          };
+        });
+      }
+
+      function renderRows(assets) {
+        tableBody.innerHTML = "";
+        for (const asset of assets) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><input value="${asset.name ?? ""}" placeholder="예: KODEX 미국S&P500" /></td>
+            <td><input value="${asset.code ?? ""}" placeholder="예: 379800" /></td>
+            <td class="num"><input type="number" min="0" step="0.01" value="${asset.targetWeight ?? 0}" /></td>
+            <td class="num"><input class="price-input" type="text" inputmode="numeric" value="${formatInteger(asset.price ?? 0)}" /></td>
+            <td class="num"><input type="number" min="0" step="1" value="${asset.qty ?? 0}" /></td>
+            <td class="num value-cell">0원</td>
+            <td class="action"><button class="delete">삭제</button></td>
+          `;
+          tableBody.appendChild(tr);
+          tr.querySelector(".delete").addEventListener("click", () => {
+            tr.remove();
+            refreshEvalValues();
+          });
+        }
+        refreshEvalValues();
+      }
+
+      function refreshEvalValues() {
+        const rows = [...tableBody.querySelectorAll("tr")];
+        for (const row of rows) {
+          const inputs = row.querySelectorAll("input");
+          const price = parseNumberLike(inputs[3].value || 0);
+          const qty = Number(inputs[4].value || 0);
+          row.querySelector(".value-cell").textContent = formatKRW(price * qty);
+        }
+      }
+
+      async function fetchPrices() {
+        const baseDate = document.getElementById("baseDate").value.trim();
+        if (!/^\d{8}$/.test(baseDate)) {
+          throw new Error("기준일은 YYYYMMDD 형식으로 입력하세요. 예: 20260227");
+        }
+
+        const assets = getAssetsFromTable();
+        const codes = assets.map((a) => (a.code || "").trim()).filter(Boolean);
+        if (!codes.length) {
+          alert("가격 조회할 종목코드를 입력하세요.");
+          return;
+        }
+
+        const url = `/api/prices?codes=${encodeURIComponent(codes.join(","))}&basDd=${encodeURIComponent(baseDate)}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error || `시세 조회 실패: ${res.status}`);
+        }
+
+        const json = await res.json();
+        const map = new Map(Object.entries(json.prices || {}));
+        if (!map.size) {
+          throw new Error(
+            `조회 결과가 없습니다. 기준일(${baseDate})/종목코드를 확인하세요. ` +
+              `요청 ${json.requestedCodes?.length ?? 0}개, 매칭 ${json.matched ?? 0}개`
+          );
+        }
+
+        const rows = [...tableBody.querySelectorAll("tr")];
+        const unresolved = [];
+        for (let i = 0; i < rows.length; i++) {
+          const inputs = rows[i].querySelectorAll("input");
+          const code = inputs[1].value.trim();
+          const p = Number(map.get(code));
+          if (typeof p === "number" && Number.isFinite(p)) {
+            inputs[3].value = formatInteger(Math.round(p));
+          } else {
+            unresolved.push(code);
+          }
+        }
+        refreshEvalValues();
+
+        if (unresolved.length) {
+          showError(
+            `일부 종목의 현재가를 찾지 못했습니다: ${unresolved.join(", ")} ` +
+              `(요청 ${json.requestedCodes?.length ?? 0}개, 매칭 ${json.matched ?? 0}개)`
+          );
+        }
+      }
+
+      function calculateRebalancing(assets, budget) {
+        const clean = assets.filter((a) => a.name && a.code && a.price > 0 && a.targetWeight >= 0 && a.qty >= 0);
+        if (!clean.length) {
+          throw new Error("유효한 자산이 없습니다. 종목명/코드/현재가/비중/수량을 확인하세요.");
+        }
+
+        const weightSum = clean.reduce((s, a) => s + a.targetWeight, 0);
+        if (Math.abs(weightSum - 100) > 0.01) {
+          throw new Error(`목표 비중 합이 100%가 아닙니다. 현재 ${weightSum.toFixed(2)}%`);
+        }
+
+        const base = clean.map((a) => ({
+          ...a,
+          currentValue: a.price * a.qty,
+          buyQty: 0
+        }));
+
+        const currentTotal = base.reduce((s, a) => s + a.currentValue, 0);
+        const targetTotal = currentTotal + budget;
+        let remaining = budget;
+        // Buy one share at a time, always picking the asset that most reduces
+        // target-value deviation while never exceeding the monthly budget.
+        for (let turn = 0; turn < 20000; turn++) {
+          let best = null;
+          let bestImprove = 0;
+
+          for (const a of base) {
+            if (a.price > remaining) continue;
+            const target = (a.targetWeight / 100) * targetTotal;
+            const currentPlus = a.currentValue + a.buyQty * a.price;
+            const beforeErr = Math.abs(target - currentPlus);
+            const afterErr = Math.abs(target - (currentPlus + a.price));
+            const improve = beforeErr - afterErr;
+            if (improve > bestImprove) {
+              bestImprove = improve;
+              best = a;
+            }
+          }
+
+          if (!best || bestImprove <= 0) break;
+          best.buyQty += 1;
+          remaining -= best.price;
+        }
+
+        const planned = base.map((a) => {
+          const buyAmount = a.buyQty * a.price;
+          const afterValue = a.currentValue + buyAmount;
+          return {
+            ...a,
+            buyAmount,
+            afterValue,
+            beforeWeight: currentTotal > 0 ? (a.currentValue / currentTotal) * 100 : 0,
+            afterWeight: currentTotal + (budget - remaining) > 0 ? (afterValue / (currentTotal + (budget - remaining))) * 100 : 0
+          };
+        });
+
+        return {
+          planned,
+          currentTotal,
+          invested: budget - remaining,
+          remaining,
+          afterTotal: currentTotal + (budget - remaining)
+        };
+      }
+
+      function renderResult(result) {
+        latestRebalanceResult = result;
+        lastAppliedSnapshot = null;
+        const rows = result.planned
+          .map(
+            (a) => `
+              <tr>
+                <td>${a.name}</td>
+                <td class="num">${a.buyQty.toLocaleString("ko-KR")}주</td>
+                <td class="num">${formatKRW(a.buyAmount)}</td>
+                <td class="num">${formatPct(a.targetWeight)}</td>
+                <td class="num">${formatPct(a.beforeWeight)}</td>
+                <td class="num">${formatPct(a.afterWeight)}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        resultEl.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong>매수 제안</strong>
+            <span class="pill">총 투자 ${formatKRW(result.invested)} / 잔액 ${formatKRW(result.remaining)}</span>
+          </div>
+          <div style="margin-top:8px;">
+            <button id="applyPlan">매수 제안 보유수량 반영</button>
+            <button id="undoApplyPlan" style="width:auto;margin-left:8px;" disabled>반영 취소</button>
+          </div>
+          <div id="resultNotice" class="hint">정수 주 단위로 계산하며, 남는 금액은 현금으로 유지됩니다.</div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>종목명</th>
+                  <th class="num">매수 수량</th>
+                  <th class="num">매수 금액</th>
+                  <th class="num">목표 비중</th>
+                  <th class="num">현재 비중</th>
+                  <th class="num">매수 후 비중</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+
+        const applyBtn = document.getElementById("applyPlan");
+        const undoBtn = document.getElementById("undoApplyPlan");
+        const noticeEl = document.getElementById("resultNotice");
+        applyBtn.addEventListener("click", () => {
+          if (!latestRebalanceResult) return;
+
+          const rows = [...tableBody.querySelectorAll("tr")];
+          lastAppliedSnapshot = rows.map((row) => {
+            const inputs = row.querySelectorAll("input");
+            return {
+              code: normalizeCode(inputs[1].value),
+              qty: Number(inputs[4].value || 0)
+            };
+          });
+
+          const buyMap = new Map(
+            latestRebalanceResult.planned.map((a) => [normalizeCode(a.code), Number(a.buyQty || 0)])
+          );
+          let changed = 0;
+
+          for (const row of rows) {
+            const inputs = row.querySelectorAll("input");
+            const code = normalizeCode(inputs[1].value);
+            const buyQty = buyMap.get(code) || 0;
+            if (buyQty > 0) {
+              const currentQty = Number(inputs[4].value || 0);
+              inputs[4].value = String(currentQty + buyQty);
+              changed += 1;
+            }
+          }
+
+          refreshEvalValues();
+          if (changed > 0) {
+            applyBtn.disabled = true;
+            applyBtn.textContent = "반영 완료";
+            undoBtn.disabled = false;
+            saveActiveAccountFromForm();
+            if (noticeEl) {
+              noticeEl.textContent = "매수 제안을 보유수량에 반영했습니다. 필요하면 '브라우저에 저장'을 눌러 보관하세요.";
+            }
+          } else {
+            if (noticeEl) {
+              noticeEl.textContent = "반영할 매수 수량이 없습니다.";
+            }
+          }
+        });
+
+        undoBtn.addEventListener("click", () => {
+          if (!lastAppliedSnapshot) return;
+          const snapshotMap = new Map(lastAppliedSnapshot.map((x) => [x.code, x.qty]));
+          const rows = [...tableBody.querySelectorAll("tr")];
+          for (const row of rows) {
+            const inputs = row.querySelectorAll("input");
+            const code = normalizeCode(inputs[1].value);
+            if (snapshotMap.has(code)) {
+              inputs[4].value = String(snapshotMap.get(code));
+            }
+          }
+          refreshEvalValues();
+          saveActiveAccountFromForm();
+          lastAppliedSnapshot = null;
+          undoBtn.disabled = true;
+          applyBtn.disabled = false;
+          applyBtn.textContent = "매수 제안 보유수량 반영";
+          if (noticeEl) {
+            noticeEl.textContent = "보유수량 반영을 취소했습니다.";
+          }
+        });
+      }
+
+      function showInfo(message) {
+        if (!statusMessageEl) return;
+        statusMessageEl.textContent = message;
+        statusMessageEl.classList.remove("error");
+      }
+
+      function showError(message) {
+        if (!statusMessageEl) return;
+        statusMessageEl.textContent = message;
+        statusMessageEl.classList.add("error");
+      }
+
+      document.getElementById("addRow").addEventListener("click", () => {
+        const assets = getAssetsFromTable();
+        assets.push({ name: "", code: "", targetWeight: 0, price: 0, qty: 0 });
+        renderRows(assets);
+        saveActiveAccountFromForm();
+      });
+
+      document.getElementById("fetchPrices").addEventListener("click", async () => {
+        try {
+          await fetchPrices();
+          saveActiveAccountFromForm();
+          showInfo("현재가를 업데이트했습니다. 리밸런싱 계산을 눌러주세요.");
+        } catch (e) {
+          showError(e.message || "시세 조회에 실패했습니다.");
+        }
+      });
+
+      document.getElementById("calc").addEventListener("click", () => {
+        try {
+          const budget = parseNumberLike(document.getElementById("budget").value || 0);
+          const assets = getAssetsFromTable();
+          const result = calculateRebalancing(assets, budget);
+          renderResult(result);
+        } catch (e) {
+          showError(e.message || "계산에 실패했습니다.");
+        }
+      });
+
+      document.getElementById("save").addEventListener("click", () => {
+        saveActiveAccountFromForm();
+        localStorage.setItem(STORAGE_KEY_V3, JSON.stringify(state));
+        showInfo("현재 설정을 브라우저(localStorage)에 저장했습니다.");
+      });
+
+      document.getElementById("load").addEventListener("click", () => {
+        const raw = localStorage.getItem(STORAGE_KEY_V3) || localStorage.getItem(STORAGE_KEY_V2) || localStorage.getItem(STORAGE_KEY_V1);
+        if (!raw) {
+          showError("저장된 설정이 없습니다.");
+          return;
+        }
+        const data = JSON.parse(raw);
+        state = normalizeLoadedState(data);
+        syncAccountIdSeq();
+        renderAccountSelector();
+        renderActiveAccount();
+        showInfo("저장된 설정을 불러왔습니다.");
+      });
+
+      document.getElementById("exportExcel").addEventListener("click", () => {
+        try {
+          if (typeof XLSX === "undefined") {
+            showError("엑셀 라이브러리를 불러오지 못했습니다. 네트워크를 확인하세요.");
+            return;
+          }
+          saveActiveAccountFromForm();
+          const wb = XLSX.utils.book_new();
+
+          const stateSheet = XLSX.utils.aoa_to_sheet([["state_json"], [JSON.stringify(state)]]);
+          XLSX.utils.book_append_sheet(wb, stateSheet, "state_json");
+
+          const accountRows = state.accounts.map((a) => ({
+            accountId: a.id,
+            accountName: a.name,
+            budget: a.budget,
+            baseDate: a.baseDate
+          }));
+          const accountSheet = XLSX.utils.json_to_sheet(accountRows);
+          XLSX.utils.book_append_sheet(wb, accountSheet, "accounts");
+
+          const assetRows = state.accounts.flatMap((a) =>
+            (a.assets || []).map((x) => ({
+              accountId: a.id,
+              accountName: a.name,
+              name: x.name,
+              code: x.code,
+              targetWeight: x.targetWeight,
+              price: x.price,
+              qty: x.qty
+            }))
+          );
+          const assetSheet = XLSX.utils.json_to_sheet(assetRows);
+          XLSX.utils.book_append_sheet(wb, assetSheet, "assets");
+
+          const filename = `etf-rebalance-${new Date().toISOString().slice(0, 10)}.xlsx`;
+          XLSX.writeFile(wb, filename);
+          showInfo("엑셀 파일로 내보냈습니다.");
+        } catch (e) {
+          showError(e.message || "엑셀 내보내기에 실패했습니다.");
+        }
+      });
+
+      document.getElementById("downloadTemplate").addEventListener("click", () => {
+        try {
+          if (typeof XLSX === "undefined") {
+            showError("엑셀 라이브러리를 불러오지 못했습니다. 네트워크를 확인하세요.");
+            return;
+          }
+          const wb = XLSX.utils.book_new();
+
+          const stateSheet = XLSX.utils.aoa_to_sheet([
+            ["state_json"],
+            ['{"activeAccountId":"acc-1","accounts":[{"id":"acc-1","name":"기본 계좌","budget":1000000,"baseDate":"20260306","assets":[]}]}']
+          ]);
+          XLSX.utils.book_append_sheet(wb, stateSheet, "state_json");
+
+          const accountsSheet = XLSX.utils.json_to_sheet([
+            { accountId: "acc-1", accountName: "기본 계좌", budget: 1000000, baseDate: "20260306" }
+          ]);
+          XLSX.utils.book_append_sheet(wb, accountsSheet, "accounts");
+
+          const assetsSheet = XLSX.utils.json_to_sheet([
+            { accountId: "acc-1", accountName: "기본 계좌", name: "KODEX 미국S&P500", code: "379800", targetWeight: 24, price: 0, qty: 0 },
+            { accountId: "acc-1", accountName: "기본 계좌", name: "ACE KRX금현물", code: "411060", targetWeight: 19, price: 0, qty: 0 }
+          ]);
+          XLSX.utils.book_append_sheet(wb, assetsSheet, "assets");
+
+          XLSX.writeFile(wb, "etf-rebalance-template.xlsx");
+          showInfo("엑셀 템플릿 파일을 다운로드했습니다.");
+        } catch (e) {
+          showError(e.message || "엑셀 템플릿 다운로드에 실패했습니다.");
+        }
+      });
+
+      const importExcelInputEl = document.getElementById("importExcelInput");
+      document.getElementById("importExcel").addEventListener("click", () => {
+        importExcelInputEl.value = "";
+        importExcelInputEl.click();
+      });
+
+      importExcelInputEl.addEventListener("change", async (e) => {
+        try {
+          if (typeof XLSX === "undefined") {
+            showError("엑셀 라이브러리를 불러오지 못했습니다. 네트워크를 확인하세요.");
+            return;
+          }
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+
+          const buffer = await file.arrayBuffer();
+          const wb = XLSX.read(buffer, { type: "array" });
+
+          let importedState = null;
+          if (wb.Sheets["state_json"]) {
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets["state_json"], { header: 1 });
+            const rawJson = rows?.[1]?.[0];
+            if (typeof rawJson === "string" && rawJson.trim()) {
+              importedState = JSON.parse(rawJson);
+            }
+          }
+
+          if (!importedState && wb.Sheets["accounts"] && wb.Sheets["assets"]) {
+            const accounts = XLSX.utils.sheet_to_json(wb.Sheets["accounts"], { defval: "" });
+            const assets = XLSX.utils.sheet_to_json(wb.Sheets["assets"], { defval: "" });
+            const byId = new Map(
+              accounts.map((a, idx) => [
+                String(a.accountId || `acc-${idx + 1}`),
+                {
+                  id: String(a.accountId || `acc-${idx + 1}`),
+                  name: String(a.accountName || `계좌 ${idx + 1}`),
+                  budget: parseNumberLike(a.budget),
+                  baseDate: String(a.baseDate || yesterdayYmd),
+                  assets: []
+                }
+              ])
+            );
+            for (const row of assets) {
+              const accountId = String(row.accountId || "");
+              if (!byId.has(accountId)) continue;
+              byId.get(accountId).assets.push({
+                name: String(row.name || ""),
+                code: String(row.code || ""),
+                targetWeight: Number(row.targetWeight || 0),
+                price: parseNumberLike(row.price),
+                qty: Number(row.qty || 0)
+              });
+            }
+            importedState = {
+              activeAccountId: byId.size ? [...byId.keys()][0] : "",
+              accounts: [...byId.values()]
+            };
+          }
+
+          if (!importedState) {
+            throw new Error("엑셀 파일 형식을 인식하지 못했습니다.");
+          }
+
+          state = normalizeLoadedState(importedState);
+          syncAccountIdSeq();
+          renderAccountSelector();
+          renderActiveAccount();
+          showInfo("엑셀 파일에서 데이터를 불러왔습니다.");
+        } catch (err) {
+          showError(err.message || "엑셀 불러오기에 실패했습니다.");
+        }
+      });
+
+      accountSelectEl.addEventListener("change", () => {
+        saveActiveAccountFromForm();
+        state.activeAccountId = accountSelectEl.value;
+        renderAccountSelector();
+        renderActiveAccount();
+      });
+
+      document.getElementById("renameAccount").addEventListener("click", () => {
+        const active = getActiveAccount();
+        active.name = accountNameEl.value.trim() || active.name;
+        renderAccountSelector();
+        showInfo("계좌 이름을 변경했습니다.");
+      });
+
+      document.getElementById("addAccount").addEventListener("click", () => {
+        saveActiveAccountFromForm();
+        const newAccount = createAccount(`계좌 ${state.accounts.length + 1}`);
+        state.accounts.push(newAccount);
+        state.activeAccountId = newAccount.id;
+        renderAccountSelector();
+        renderActiveAccount();
+        showInfo("새 계좌를 추가했습니다.");
+      });
+
+      document.getElementById("deleteAccount").addEventListener("click", () => {
+        if (state.accounts.length <= 1) {
+          showError("최소 1개 계좌는 유지해야 합니다.");
+          return;
+        }
+        const active = getActiveAccount();
+        state.accounts = state.accounts.filter((a) => a.id !== active.id);
+        state.activeAccountId = state.accounts[0].id;
+        renderAccountSelector();
+        renderActiveAccount();
+        showInfo("선택한 계좌를 삭제했습니다.");
+      });
+
+      tableBody.addEventListener("input", (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        if (t.classList.contains("price-input")) {
+          t.value = t.value.replace(/[^\d]/g, "");
+        }
+        refreshEvalValues();
+      });
+
+      tableBody.addEventListener("focusin", (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        if (!t.classList.contains("price-input")) return;
+        t.value = String(parseNumberLike(t.value));
+      });
+
+      tableBody.addEventListener("focusout", (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        if (!t.classList.contains("price-input")) return;
+        formatMoneyInput(t);
+        refreshEvalValues();
+      });
+
+      budgetEl.addEventListener("input", () => {
+        budgetEl.value = budgetEl.value.replace(/[^\d]/g, "");
+      });
+      budgetEl.addEventListener("focus", () => {
+        budgetEl.value = String(parseNumberLike(budgetEl.value));
+      });
+      budgetEl.addEventListener("blur", () => {
+        formatMoneyInput(budgetEl);
+      });
+
+      state = makeDefaultState();
+      syncAccountIdSeq();
+      renderAccountSelector();
+      renderActiveAccount();
+      showInfo("현재가 불러오기 후 리밸런싱 계산을 눌러주세요.");
+    </script>
+  </body>
+</html>
