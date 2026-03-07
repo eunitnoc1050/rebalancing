@@ -468,15 +468,15 @@
     </script>
     <script>
       const DEFAULT_ASSETS = [
-        { name: "KODEX 미국S&P500", code: "379800", targetWeight: 24, price: 0, qty: 36 },
-        { name: "KIWOOM 200TR", code: "294400", targetWeight: 8, price: 0, qty: 3 },
-        { name: "KODEX 차이나CSI300", code: "283580", targetWeight: 8, price: 0, qty: 18 },
-        { name: "KODEX 인도Nifty50", code: "453810", targetWeight: 8, price: 0, qty: 19 },
-        { name: "ACE KRX금현물", code: "411060", targetWeight: 19, price: 0, qty: 22 },
-        { name: "KODEX 미국10년국채선물", code: "308620", targetWeight: 7, price: 0, qty: 19 },
-        { name: "ACE 미국30년국채액티브(H)", code: "453850", targetWeight: 7, price: 0, qty: 31 },
-        { name: "RISE KIS국고채30년Enhanced", code: "385560", targetWeight: 14, price: 0, qty: 6 },
-        { name: "TIGER KOFR금리액티브(합성)", code: "449170", targetWeight: 5, price: 0, qty: 1 }
+        { name: "KODEX 미국S&P500", code: "379800", targetWeight: "", price: 0, qty: "" },
+        { name: "KIWOOM 200TR", code: "294400", targetWeight: "", price: 0, qty: "" },
+        { name: "KODEX 차이나CSI300", code: "283580", targetWeight: "", price: 0, qty: "" },
+        { name: "KODEX 인도Nifty50", code: "453810", targetWeight: "", price: 0, qty: "" },
+        { name: "ACE KRX금현물", code: "411060", targetWeight: "", price: 0, qty: "" },
+        { name: "KODEX 미국10년국채선물", code: "308620", targetWeight: "", price: 0, qty: "" },
+        { name: "ACE 미국30년국채액티브(H)", code: "453850", targetWeight: "", price: 0, qty: "" },
+        { name: "RISE KIS국고채30년Enhanced", code: "385560", targetWeight: "", price: 0, qty: "" },
+        { name: "TIGER KOFR금리액티브(합성)", code: "449170", targetWeight: "", price: 0, qty: "" }
       ];
 
       const tableBody = document.querySelector("#assetTable tbody");
@@ -640,7 +640,7 @@
             <td class="num"><input class="price-input" type="text" inputmode="numeric" value="${formatInteger(asset.price ?? 0)}" /></td>
             <td class="num"><input type="number" min="0" step="1" value="${asset.qty ?? 0}" /></td>
             <td class="num value-cell">0원</td>
-            <td class="action"><button class="delete">삭제</button></td>
+            <td class="action"><button class="delete" type="button" aria-label="ETF 상품 삭제" title="삭제">삭제</button></td>
           `;
           tableBody.appendChild(tr);
           tr.querySelector(".delete").addEventListener("click", () => {
