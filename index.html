@@ -747,67 +747,105 @@
         const base = clean.map((a) => ({
           ...a,
           currentValue: a.price * a.qty,
-          buyQty: 0
+          tradeQty: 0
         }));
 
         const currentTotal = base.reduce((s, a) => s + a.currentValue, 0);
         const targetTotal = currentTotal + budget;
-        let remaining = budget;
-        // Buy one share at a time, always picking the asset that most reduces
-        // target-value deviation while never exceeding the monthly budget.
+        const calcError = () =>
+          base.reduce((sum, a) => {
+            const target = (a.targetWeight / 100) * targetTotal;
+            const value = a.currentValue + a.tradeQty * a.price;
+            return sum + Math.abs(target - value);
+          }, 0);
+
+        let cash = budget;
+
         for (let turn = 0; turn < 20000; turn++) {
           let best = null;
           let bestImprove = 0;
+          let bestDirection = 0;
+          const beforeTotalError = calcError();
 
           for (const a of base) {
-            if (a.price > remaining) continue;
+            const currentQty = a.qty + a.tradeQty;
             const target = (a.targetWeight / 100) * targetTotal;
-            const currentPlus = a.currentValue + a.buyQty * a.price;
-            const beforeErr = Math.abs(target - currentPlus);
-            const afterErr = Math.abs(target - (currentPlus + a.price));
-            const improve = beforeErr - afterErr;
-            if (improve > bestImprove) {
-              bestImprove = improve;
-              best = a;
+            const currentValueWithTrades = a.currentValue + a.tradeQty * a.price;
+
+            if (cash >= a.price) {
+              const afterErr = Math.abs(target - (currentValueWithTrades + a.price));
+              const beforeErr = Math.abs(target - currentValueWithTrades);
+              const improve = beforeErr - afterErr;
+              if (improve > 0 && improve > bestImprove) {
+                bestImprove = improve;
+                best = a;
+                bestDirection = 1;
+              }
+            }
+
+            if (budget === 0 && currentQty > 0) {
+              const afterErr = Math.abs(target - (currentValueWithTrades - a.price));
+              const beforeErr = Math.abs(target - currentValueWithTrades);
+              const improve = beforeErr - afterErr;
+              if (improve > 0 && improve > bestImprove) {
+                bestImprove = improve;
+                best = a;
+                bestDirection = -1;
+              }
             }
           }
 
-          if (!best || bestImprove <= 0) break;
-          best.buyQty += 1;
-          remaining -= best.price;
+          if (!best || bestDirection === 0) break;
+
+          best.tradeQty += bestDirection;
+          cash -= bestDirection * best.price;
+
+          const afterTotalError = calcError();
+          if (afterTotalError >= beforeTotalError) {
+            best.tradeQty -= bestDirection;
+            cash += bestDirection * best.price;
+            break;
+          }
         }
 
         const planned = base.map((a) => {
-          const buyAmount = a.buyQty * a.price;
-          const afterValue = a.currentValue + buyAmount;
+          const tradeAmount = a.tradeQty * a.price;
+          const afterValue = a.currentValue + tradeAmount;
           return {
             ...a,
-            buyAmount,
+            tradeQty: a.tradeQty,
+            tradeAmount,
             afterValue,
             beforeWeight: currentTotal > 0 ? (a.currentValue / currentTotal) * 100 : 0,
-            afterWeight: currentTotal + (budget - remaining) > 0 ? (afterValue / (currentTotal + (budget - remaining))) * 100 : 0
+            afterWeight: targetTotal > 0 ? (afterValue / targetTotal) * 100 : 0
           };
         });
 
+        const totalBuyAmount = planned.reduce((sum, a) => sum + Math.max(0, a.tradeAmount), 0);
+        const totalSellAmount = planned.reduce((sum, a) => sum + Math.max(0, -a.tradeAmount), 0);
+
         return {
           planned,
+          mode: budget === 0 ? "exchange" : "buy",
           currentTotal,
-          invested: budget - remaining,
-          remaining,
-          afterTotal: currentTotal + (budget - remaining)
+          invested: totalBuyAmount,
+          soldAmount: totalSellAmount,
+          remaining: cash,
+          afterTotal: targetTotal
         };
       }
 
       function renderResult(result) {
         latestRebalanceResult = result;
         lastAppliedSnapshot = null;
-        const rows = result.planned
+        const actionable = result.planned.filter((a) => a.tradeQty !== 0);
+        const rows = actionable
           .map(
             (a) => `
               <tr>
                 <td>${a.name}</td>
-                <td class="num">${a.buyQty.toLocaleString("ko-KR")}주</td>
-                <td class="num">${formatKRW(a.buyAmount)}</td>
+                <td class="num">${a.tradeQty > 0 ? `매수 ${a.tradeQty.toLocaleString("ko-KR")}주` : a.tradeQty < 0 ? `매도 ${Math.abs(a.tradeQty).toLocaleString("ko-KR")}주` : "-"}</td>
+                <td class="num">${a.tradeQty === 0 ? "-" : formatKRW(Math.abs(a.tradeAmount))}</td>
                 <td class="num">${formatPct(a.targetWeight)}</td>
                 <td class="num">${formatPct(a.beforeWeight)}</td>
                 <td class="num">${formatPct(a.afterWeight)}</td>
@@ -816,29 +854,38 @@
           )
           .join("");
 
+        const summary =
+          result.mode === "exchange"
+            ? `총 매도 ${formatKRW(result.soldAmount)} / 총 매수 ${formatKRW(result.invested)} / 잔액 ${formatKRW(result.remaining)}`
+            : `총 투자 ${formatKRW(result.invested)} / 잔액 ${formatKRW(result.remaining)}`;
+
         resultEl.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <strong>매수 제안</strong>
-            <span class="pill">총 투자 ${formatKRW(result.invested)} / 잔액 ${formatKRW(result.remaining)}</span>
+            <strong>${result.mode === "exchange" ? "거래 제안" : "매수 제안"}</strong>
+            <span class="pill">${summary}</span>
           </div>
           <div style="margin-top:8px;">
-            <button id="applyPlan">매수 제안 보유수량 반영</button>
+            <button id="applyPlan">${result.mode === "exchange" ? "거래 제안 보유수량 반영" : "매수 제안 보유수량 반영"}</button>
             <button id="undoApplyPlan" style="width:auto;margin-left:8px;" disabled>반영 취소</button>
           </div>
-          <div id="resultNotice" class="hint">정수 주 단위로 계산하며, 남는 금액은 현금으로 유지됩니다.</div>
+          <div id="resultNotice" class="hint">${
+            result.mode === "exchange"
+              ? "투자금이 0원일 때는 기존 자산을 매도한 금액 범위 안에서 매수하도록 계산합니다."
+              : "정수 주 단위로 계산하며, 남는 금액은 현금으로 유지됩니다."
+          }</div>
           <div class="table-wrap" style="margin-top:10px;">
             <table>
               <thead>
                 <tr>
                   <th>종목명</th>
-                  <th class="num">매수 수량</th>
-                  <th class="num">매수 금액</th>
+                  <th class="num">거래 수량</th>
+                  <th class="num">거래 금액</th>
                   <th class="num">목표 비중</th>
                   <th class="num">현재 비중</th>
                   <th class="num">매수 후 비중</th>
                 </tr>
               </thead>
-              <tbody>${rows}</tbody>
+              <tbody>${rows || '<tr><td colspan="6" class="num" style="text-align:center;">거래가 필요하지 않습니다.</td></tr>'}</tbody>
             </table>
           </div>
         `;
@@ -859,18 +906,22 @@
           });
 
           const buyMap = new Map(
-            latestRebalanceResult.planned.map((a) => [normalizeCode(a.code), Number(a.buyQty || 0)])
+            latestRebalanceResult.planned.map((a) => [normalizeCode(a.code), Number(a.tradeQty || 0)])
           );
           let changed = 0;
+          let buyCount = 0;
+          let sellCount = 0;
 
           for (const row of rows) {
             const inputs = row.querySelectorAll("input");
             const code = normalizeCode(inputs[1].value);
-            const buyQty = buyMap.get(code) || 0;
-            if (buyQty > 0) {
+            const tradeQty = buyMap.get(code) || 0;
+            if (tradeQty !== 0) {
               const currentQty = Number(inputs[4].value || 0);
-              inputs[4].value = String(currentQty + buyQty);
+              inputs[4].value = String(Math.max(0, currentQty + tradeQty));
               changed += 1;
+              if (tradeQty > 0) buyCount += 1;
+              if (tradeQty < 0) sellCount += 1;
             }
           }
 
@@ -881,11 +932,15 @@
             undoBtn.disabled = false;
             saveActiveAccountFromForm();
             if (noticeEl) {
-              noticeEl.textContent = "매수 제안을 보유수량에 반영했습니다. 필요하면 '브라우저에 저장'을 눌러 보관하세요.";
+              noticeEl.textContent =
+                latestRebalanceResult.mode === "exchange"
+                  ? `거래 제안을 보유수량에 반영했습니다. 매수 ${buyCount}개 종목, 매도 ${sellCount}개 종목이 반영되었습니다.`
+                  : "매수 제안을 보유수량에 반영했습니다. 필요하면 '브라우저에 저장'을 눌러 보관하세요.";
             }
           } else {
             if (noticeEl) {
-              noticeEl.textContent = "반영할 매수 수량이 없습니다.";
+              noticeEl.textContent =
+                latestRebalanceResult.mode === "exchange" ? "반영할 거래 수량이 없습니다." : "반영할 매수 수량이 없습니다.";
             }
           }
         });
@@ -906,7 +961,7 @@
           lastAppliedSnapshot = null;
           undoBtn.disabled = true;
           applyBtn.disabled = false;
-          applyBtn.textContent = "매수 제안 보유수량 반영";
+          applyBtn.textContent = latestRebalanceResult.mode === "exchange" ? "거래 제안 보유수량 반영" : "매수 제안 보유수량 반영";
           if (noticeEl) {
             noticeEl.textContent = "보유수량 반영을 취소했습니다.";
           }
